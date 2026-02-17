@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Backend: Reservas de Hotel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .flow-line { border-left: 2px dashed #cbd5e1; margin-left: 1rem; padding-left: 1.5rem; }
+        .active-layer { border-color: #3b82f6; background-color: #eff6ff; transform: translateX(10px); }
+        .code-font { font-family: 'Fira Code', monospace; font-size: 0.85rem; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 border-b border-slate-700 pb-4">
+            <h1 class="text-3xl font-bold text-white">Simulador de Backend: <span class="text-blue-400">Hotel API</span></h1>
+            <p class="text-slate-400">Visualizando el flujo de una reserva a través de capas.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Panel Izquierdo: Interfaz de Cliente -->
+            <div class="space-y-6">
+                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <i class="fas fa-laptop-code text-blue-400"></i> Cliente (Frontend / Postman)
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="bg-slate-900 p-4 rounded-lg border border-slate-700">
+                            <p class="text-xs font-bold text-slate-500 uppercase mb-2">Habitaciones Disponibles</p>
+                            <div class="flex justify-between items-center bg-slate-800 p-3 rounded border border-slate-600 mb-2">
+                                <span>Habitación 101 (Simple)</span>
+                                <span id="status-101" class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">Libre</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-slate-800 p-3 rounded border border-slate-600">
+                                <span>Habitación 102 (Doble)</span>
+                                <span id="status-102" class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded">Libre</span>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="simulateBooking(101)" class="flex-1 bg-blue-600 hover:bg-blue-700 p-3 rounded-xl font-bold transition-all">
+                                Reservar 101
+                            </button>
+                            <button onclick="resetApp()" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl px-6 transition-all">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Consola del Contrato -->
+                <div class="bg-black p-6 rounded-2xl border border-slate-700 shadow-2xl">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase mb-4 flex justify-between">
+                        <span>Terminal: Contrato JSON</span>
+                        <span id="http-method" class="text-blue-400">HTTP IDLE</span>
+                    </h2>
+                    <div id="json-display" class="code-font text-emerald-400 h-40 overflow-auto">
+                        // Esperando petición...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Derecho: Capas del Backend -->
+            <div class="space-y-4">
+                
+                <!-- Capa 1: Controller -->
+                <div id="layer-controller" class="bg-slate-800 p-5 rounded-xl border-l-4 border-transparent transition-all">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-blue-400">1. CONTROLLER (ReservasController)</h3>
+                        <span class="text-[10px] bg-slate-700 px-2 py-1 rounded">HTTP HANDLER</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-3">Recibe el JSON, extrae los datos y llama al servicio.</p>
+                    <div class="bg-slate-900 p-3 rounded code-font text-xs text-slate-300">
+                        createReservation(req) { <br>
+                        &nbsp;&nbsp;const { roomId } = req.body;<br>
+                        &nbsp;&nbsp;return service.book(roomId);<br>
+                        }
+                    </div>
+                </div>
+
+                <!-- Capa 2: Service -->
+                <div id="layer-service" class="bg-slate-800 p-5 rounded-xl border-l-4 border-transparent transition-all">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-amber-400">2. SERVICE (BookingService)</h3>
+                        <span class="text-[10px] bg-slate-700 px-2 py-1 rounded">LOGIC</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-3">Aplica reglas: ¿La habitación existe? ¿Está libre?</p>
+                    <div class="bg-slate-900 p-3 rounded code-font text-xs text-slate-300">
+                        book(id) {<br>
+                        &nbsp;&nbsp;const room = model.find(id);<br>
+                        &nbsp;&nbsp;if (room.isOccupied) throw Error(400);<br>
+                        &nbsp;&nbsp;return model.update(id, true);<br>
+                        }
+                    </div>
+                </div>
+
+                <!-- Capa 3: Model -->
+                <div id="layer-model" class="bg-slate-800 p-5 rounded-xl border-l-4 border-transparent transition-all">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-emerald-400">3. MODEL (RoomModel)</h3>
+                        <span class="text-[10px] bg-slate-700 px-2 py-1 rounded">DATA</span>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-3">Gestiona el estado persistente (Base de Datos o Memoria).</p>
+                    <div class="bg-slate-900 p-3 rounded code-font text-xs text-slate-300">
+                        { id: 101, type: 'Simple', occupied: <span id="model-val-101">false</span> }
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db = {
+            101: { id: 101, type: 'Simple', occupied: false },
+            102: { id: 102, type: 'Doble', occupied: false }
+        };
+
+        function updateDisplay() {
+            for (let id in db) {
+                const badge = document.getElementById(`status-${id}`);
+                const modelVal = document.getElementById(`model-val-${id}`);
+                if (db[id].occupied) {
+                    badge.innerText = 'Ocupada';
+                    badge.className = 'text-xs bg-rose-500/20 text-rose-400 px-2 py-1 rounded';
+                    if(modelVal) modelVal.innerText = 'true';
+                } else {
+                    badge.innerText = 'Libre';
+                    badge.className = 'text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded';
+                    if(modelVal) modelVal.innerText = 'false';
+                }
+            }
+        }
+
+        async function simulateBooking(roomId) {
+            const jsonDisplay = document.getElementById('json-display');
+            const httpMethod = document.getElementById('http-method');
+            
+            // 1. Iniciar Request
+            httpMethod.innerText = "POST /api/reservations";
+            jsonDisplay.innerHTML = `<span class="text-slate-500">// Request Body</span><br>{ "roomId": ${roomId}, "user": "Estudiante" }`;
+            
+            // 2. Animar Capas
+            await highlightLayer('layer-controller', 800);
+            
+            await highlightLayer('layer-service', 1000);
+            
+            if (db[roomId].occupied) {
+                // Fallo en Service
+                jsonDisplay.innerHTML += `<br><br><span class="text-rose-400">// Response (400 Bad Request)</span><br>{ "error": "Room already booked" }`;
+                showError();
+                return;
+            }
+
+            await highlightLayer('layer-model', 800);
+            
+            // 3. Finalizar
+            db[roomId].occupied = true;
+            updateDisplay();
+            jsonDisplay.innerHTML += `<br><br><span class="text-emerald-400">// Response (201 Created)</span><br>{ "id": "RES-${Math.floor(Math.random()*1000)}", "roomId": ${roomId}, "status": "confirmed" }`;
+        }
+
+        function highlightLayer(id, ms) {
+            return new Promise(res => {
+                const el = document.getElementById(id);
+                el.classList.add('active-layer');
+                setTimeout(() => {
+                    el.classList.remove('active-layer');
+                    res();
+                }, ms);
+            });
+        }
+
+        function resetApp() {
+            db[101].occupied = false;
+            db[102].occupied = false;
+            document.getElementById('json-display').innerHTML = '// Esperando petición...';
+            document.getElementById('http-method').innerText = 'HTTP IDLE';
+            updateDisplay();
+        }
+
+        function showError() {
+            const body = document.body;
+            body.classList.add('bg-rose-950');
+            setTimeout(() => body.classList.remove('bg-rose-950'), 300);
+        }
+    </script>
+</body>
+</html>
