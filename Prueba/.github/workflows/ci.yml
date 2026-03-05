@@ -1,0 +1,22 @@
+name: Pipeline de Calidad Hotel API
+
+on: [push, pull_request] # Se activa con cada subida de código
+
+jobs:
+  verificar-calidad:
+    runs-on: ubuntu-latest # Un servidor virtual de Linux
+
+    steps:
+      - name: Copiar código del repositorio
+        uses: actions/checkout@v3
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Instalar Dependencias
+        run: npm install
+
+      - name: Correr Pruebas Automáticas
+        run: npm test
